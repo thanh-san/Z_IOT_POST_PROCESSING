@@ -12,73 +12,74 @@ TYPES: BEGIN OF ty_employee,
 " =========================================================================
 " TOP-DECLARATION BLOCK
 " =========================================================================
-DATA: lt_staging        TYPE TABLE OF zta_staging,
-      ls_stage          TYPE zta_staging,
-      lt_punch_log      TYPE TABLE OF zta_punch_log,
-      ls_punch_log      TYPE zta_punch_log,
-      lt_timesheet_all  TYPE TABLE OF zta_timesheet,
-      ls_timesheet_o    TYPE zta_timesheet,
-      ls_timesheet_n    TYPE zta_timesheet,
-      lv_card_date      TYPE dats,
-      lv_prev_date      TYPE dats,
-      lv_card_time      TYPE tims,
-      lv_pernr          TYPE pernr_d,
-      lv_dept_id        TYPE string,
+DATA: lt_staging         TYPE TABLE OF zta_staging,
+      ls_stage           TYPE zta_staging,
+      lt_punch_log       TYPE TABLE OF zta_punch_log,
+      ls_punch_log       TYPE zta_punch_log,
+      lt_timesheet_all   TYPE TABLE OF zta_timesheet,
+      ls_timesheet_o     TYPE zta_timesheet,
+      ls_timesheet_n     TYPE zta_timesheet,
+      lv_card_date       TYPE dats,
+      lv_prev_date       TYPE dats,
+      lv_card_time       TYPE tims,
+      lv_pernr           TYPE pernr_d,
+      lv_dept_id         TYPE string,
 
       " Master Data Tables
-      lt_emp_master     TYPE TABLE OF ty_employee,
-      ls_emp_master     TYPE ty_employee,
-      lt_emp_shifts     TYPE TABLE OF zta_emp_shift,
-      ls_emp_shift      TYPE zta_emp_shift,
-      lt_schedule       TYPE TABLE OF zta_schedule,
-      ls_schedule       TYPE zta_schedule,
-      lt_ot_plan        TYPE TABLE OF zta_ot_plan,
-      ls_ot_plan        TYPE zta_ot_plan,
-      lt_holidays       TYPE TABLE OF zta_holiday,
-      ls_holiday        TYPE zta_holiday,
+      lt_emp_master      TYPE TABLE OF ty_employee,
+      ls_emp_master      TYPE ty_employee,
+      lt_emp_shifts      TYPE TABLE OF zta_emp_shift,
+      ls_emp_shift       TYPE zta_emp_shift,
+      lt_schedule        TYPE TABLE OF zta_schedule,
+      ls_schedule        TYPE zta_schedule,
+      lt_ot_plan         TYPE TABLE OF zta_ot_plan,
+      ls_ot_plan         TYPE zta_ot_plan,
+      lt_holidays        TYPE TABLE OF zta_holiday,
+      ls_holiday         TYPE zta_holiday,
 
       " Time Window & Shift Routing Variables
-      lv_matched_shift  TYPE zde_shift_id,
-      lv_matched_date   TYPE dats,
-      lv_grace_seconds  TYPE i,
-      lv_earliest_in    TYPE tims,
-      lv_earliest_out   TYPE tims,
-      lv_cutoff_out     TYPE tims,
-      lv_ot_seconds     TYPE i,
-      lv_max_allowed_ot TYPE p DECIMALS 2,
-      lv_calculated_ot  TYPE p DECIMALS 2,
-      lv_exist_punches  TYPE i,
+      lv_matched_shift   TYPE zde_shift_id,
+      lv_matched_date    TYPE dats,
+      lv_grace_seconds   TYPE i,
+      lv_earliest_in     TYPE tims,
+      lv_earliest_out    TYPE tims,
+      lv_cutoff_out      TYPE tims,
+      lv_ot_seconds      TYPE i,
+      lv_max_allowed_ot  TYPE p DECIMALS 2,
+      lv_calculated_ot   TYPE p DECIMALS 2,
+      lv_exist_punches   TYPE i,
 
       " Flags
-      lv_is_check_in    TYPE abap_bool,
+      lv_is_check_in     TYPE abap_bool,
       lv_is_checkout_win TYPE abap_bool,
-      lv_is_late        TYPE c LENGTH 1,
-      lv_is_early       TYPE c LENGTH 1,
-      lv_is_severe_late TYPE c LENGTH 1,
-      lv_has_ot_plan    TYPE abap_bool,
-      lv_is_holiday     TYPE abap_bool,
-      lv_clean_card     TYPE zta_employee-card_id,
-      lv_allow_log      TYPE abap_bool,
-      lv_day_of_week    TYPE c LENGTH 1,
+      lv_is_late         TYPE c LENGTH 1,
+      lv_is_early        TYPE c LENGTH 1,
+      lv_is_severe_late  TYPE c LENGTH 1,
+      lv_has_ot_plan     TYPE abap_bool,
+      lv_is_holiday      TYPE abap_bool,
+      lv_clean_card      TYPE zta_employee-card_id,
+      lv_allow_log       TYPE abap_bool,
+      lv_day_of_week     TYPE c LENGTH 1,
 
       " Calculation Variables
-      lv_sec_dec        TYPE p DECIMALS 2,
-      lv_hours          TYPE p DECIMALS 2,
-      lv_late_seconds   TYPE i,
-      lv_early_seconds  TYPE i,
-      lv_deduct_hours   TYPE p DECIMALS 2,
-      lv_ts             TYPE timestamp.
+      lv_sec_dec         TYPE p DECIMALS 2,
+      lv_hours           TYPE p DECIMALS 2,
+      lv_late_seconds    TYPE i,
+      lv_early_seconds   TYPE i,
+      lv_deduct_hours    TYPE p DECIMALS 2,
+      lv_ts              TYPE timestamp.
 
 " =========================================================================
 " LOGIC XỬ LÝ CHÍNH
 " =========================================================================
+
 START-OF-SELECTION.
 
   " 1. LẤY DỮ LIỆU THÔ TỪ BẢNG ĐỆM STAGING
   SELECT * FROM zta_staging
     WHERE processed = ' ' OR processed = 'E'
     ORDER BY timestamp
-    INTO TABLE @lt_staging.
+  INTO TABLE @lt_staging.
 
   IF lt_staging IS INITIAL.
     RETURN.
@@ -98,7 +99,7 @@ START-OF-SELECTION.
       FROM zta_employee
       FOR ALL ENTRIES IN @lt_emp_master
       WHERE card_id = @lt_emp_master-card_id
-      INTO TABLE @lt_emp_master.
+    INTO TABLE @lt_emp_master.
   ENDIF.
 
   " Nạp cấu hình ca & ngày lễ
@@ -165,17 +166,17 @@ START-OF-SELECTION.
     SELECT * FROM zta_emp_shift
       WHERE pernr = @lv_pernr
         AND ( work_date = @lv_card_date OR work_date = @lv_prev_date )
-      INTO TABLE @lt_emp_shifts.
+    INTO TABLE @lt_emp_shifts.
 
     SELECT * FROM zta_timesheet
       WHERE pernr = @lv_pernr
         AND ( work_date = @lv_card_date OR work_date = @lv_prev_date )
-      INTO TABLE @lt_timesheet_all.
+    INTO TABLE @lt_timesheet_all.
 
     SELECT * FROM zta_ot_plan
       WHERE pernr = @lv_pernr
         AND ( plan_date = @lv_card_date OR plan_date = @lv_prev_date )
-      INTO TABLE @lt_ot_plan.
+    INTO TABLE @lt_ot_plan.
 
     CLEAR: lv_matched_shift, lv_matched_date, ls_schedule.
 
@@ -272,7 +273,7 @@ START-OF-SELECTION.
           AND shift_id   = @lv_matched_shift
           AND punch_date = @lv_card_date
           AND punch_type <> 'INVALID' AND punch_type <> 'NO_SHIFT'
-        INTO @lv_exist_punches.
+      INTO @lv_exist_punches.
 
       LOOP AT lt_punch_log TRANSPORTING NO FIELDS
         WHERE pernr      = lv_pernr
@@ -281,6 +282,8 @@ START-OF-SELECTION.
           AND punch_type <> 'INVALID' AND punch_type <> 'NO_SHIFT'.
         lv_exist_punches = lv_exist_punches + 1.
       ENDLOOP.
+
+      lv_exist_punches = lv_exist_punches + 1.
 
       " Quẹt từ giờ TIME_OUT trở đi khi có lịch OT -> Gán OT_IN / OT_OUT
       IF lv_card_time >= ls_schedule-time_out AND lv_has_ot_plan = abap_true.
@@ -347,11 +350,7 @@ START-OF-SELECTION.
       ls_timesheet_n-act_in    = lv_card_time.
       ls_timesheet_n-act_out   = '000000'.
 
-      IF ls_timesheet_o-act_in IS INITIAL.
-        ls_timesheet_n-seq_no = '01'.
-      ELSE.
-        ls_timesheet_n-seq_no = ls_timesheet_o-seq_no + 1.
-      ENDIF.
+      ls_timesheet_n-seq_no = lv_exist_punches.
 
       IF ls_timesheet_n-act_in <= ls_schedule-time_in.
         ls_timesheet_n-status = 'CHECK_IN'.
@@ -376,12 +375,12 @@ START-OF-SELECTION.
         APPEND ls_timesheet_n TO lt_timesheet_all.
       ENDIF.
 
-    " -------------------------------------------------------------------------
-    " NHÁNH 2: QUẸT GIỮA CA (Trước TIME_OUT - 1h -> Tăng SEQ_NO, KHÔNG gán ACT_OUT)
-    " -------------------------------------------------------------------------
+      " -------------------------------------------------------------------------
+      " NHÁNH 2: QUẸT GIỮA CA (Trước TIME_OUT - 1h -> Tăng SEQ_NO, KHÔNG gán ACT_OUT)
+      " -------------------------------------------------------------------------
     ELSEIF lv_is_checkout_win = abap_false.
       ls_timesheet_n        = ls_timesheet_o.
-      ls_timesheet_n-seq_no = ls_timesheet_o-seq_no + 1.
+      ls_timesheet_n-seq_no = lv_exist_punches.
       MODIFY zta_timesheet FROM @ls_timesheet_n.
 
       READ TABLE lt_timesheet_all TRANSPORTING NO FIELDS
@@ -390,12 +389,12 @@ START-OF-SELECTION.
         MODIFY lt_timesheet_all FROM ls_timesheet_n INDEX sy-tabix.
       ENDIF.
 
-    " -------------------------------------------------------------------------
-    " NHÁNH 3: CHECK-OUT HỢP LỆ (Từ TIME_OUT - 1h đến đóng ca -> CẬP NHẬT ĐÈ ACT_OUT)
-    " -------------------------------------------------------------------------
+      " -------------------------------------------------------------------------
+      " NHÁNH 3: CHECK-OUT HỢP LỆ (Từ TIME_OUT - 1h đến đóng ca -> CẬP NHẬT ĐÈ ACT_OUT)
+      " -------------------------------------------------------------------------
     ELSE.
       ls_timesheet_n            = ls_timesheet_o.
-      ls_timesheet_n-seq_no     = ls_timesheet_o-seq_no + 1.
+      ls_timesheet_n-seq_no     = lv_exist_punches.
       ls_timesheet_n-act_in     = ls_timesheet_o-act_in. " Giữ nguyên giờ vào ban đầu
       ls_timesheet_n-act_out    = lv_card_time.          " Luôn cập nhật giờ ra mới nhất
       ls_timesheet_n-dept_id    = lv_dept_id.
